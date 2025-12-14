@@ -2,13 +2,15 @@ from sqlmodel import Field, Relationship, SQLModel
 from typing import Optional, List
 
 class User(SQLModel, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
-    email: str = Field(index=True, unique=True)
-    
+   id: Optional[int] = Field(default=None, primary_key=True)
+   email: str = Field(index=True, unique=True)
+  
+   password_hash: str 
+
     # 1-to-Many relationship: One User can have many Posts
-    posts: List["Post"] = Relationship(back_populates="owner")
+   posts: List["Post"] = Relationship(back_populates="owner")
     # 1-to-Many relationship: One User can have many Comments
-    comments: List["Comment"] = Relationship(back_populates="owner")
+   comments: List["Comment"] = Relationship(back_populates="owner")
 
 class Post(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
