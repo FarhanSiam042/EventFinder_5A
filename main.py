@@ -3,6 +3,12 @@ from sqlmodel import Session, select
 from typing import List
 from contextlib import asynccontextmanager 
 
+from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.middleware.cors import CORSMiddleware # New import for CORS
+
+from auth import get_password_hash, verify_password, create_access_token, get_current_user
+from schemas import UserCreate, UserPublic
+
 
 from database import get_session, create_db_and_tables
 from models import (
@@ -179,3 +185,28 @@ def delete_comment(comment_id: int, session: Session = Depends(get_session)):
     session.delete(comment)
     session.commit()
     return {"message": "Comment deleted successfully"}
+
+@app.post("/register", response_model=UserPublic, tags=["auth"])
+def register_user(user_in: UserCreate, session: Session = Depends(get_session)):
+    """Registers a new user and hashes the password."""
+    # 1. Check if user already exists
+    existing = session.exec(select(User).where(User.email == user_in.email)).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already registered")
+
+    # 2. Hash the password securely
+    hashed_password = get_password_hash(user_in.password)
+    
+    # 3. Create the database model
+    db_user = User(
+        email=user_in.email, 
+        password_hash=hashed_password
+    )
+    
+    # 4. Save to DB
+    session.add(db_user)
+    session.commit()
+    session.refresh(db_user)
+    
+    # Return the public-facing model
+    return db_user
